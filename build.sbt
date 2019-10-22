@@ -4,18 +4,18 @@ version := "1.0"
 
 organization := "paristech"
 
-scalaVersion := "2.11.11"
+scalaVersion := "2.11.12"
 
-val sparkVersion = "2.3.4"
+val sparkVersion = "2.4.4"
 
 libraryDependencies ++= Seq(
   // Spark dependencies. Marked as provided because they must not be included in the uber jar
-  "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
-  "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
-  "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
+  "org.apache.spark" %% "spark-core" % sparkVersion, % "provided",
+  "org.apache.spark" %% "spark-sql" % sparkVersion, % "provided",
+  "org.apache.spark" %% "spark-mllib" % sparkVersion, % "provided",
 
   // Third-party libraries
-  "org.apache.hadoop" % "hadoop-aws" % "2.6.0" % "provided",
+  "org.apache.hadoop" % "hadoop-aws" % "2.7.3" % "provided",
   "com.amazonaws" % "aws-java-sdk" % "1.7.4" % "provided"
   //"com.github.scopt" %% "scopt" % "3.4.0"        // to parse options given to the jar in the spark-submit
 )
