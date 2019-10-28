@@ -70,8 +70,11 @@ object Preprocessor extends App {
   val df2: DataFrame = dfCasted.drop("disable_communication")
 
   // Droping futur leaks
-  val dfNoFutur: DataFrame = df2.drop("backers_count", "state_changed_at")
+  //val dfNoFutur: DataFrame = df2.drop("backers_count", "state_changed_at")
 
+  
+  val dfNoFutur: DataFrame = df2.drop( "state_changed_at")
+  
   // Cleaning the country/currency columns
   def cleanCountry(country: String, currency: String): String = {
     if (country == "False")
@@ -90,10 +93,10 @@ object Preprocessor extends App {
   val cleanCountryUdf = udf(cleanCountry _)
   val cleanCurrencyUdf = udf(cleanCurrency _)
 
-  val dfCountry: DataFrame = dfNoFutur
-    .withColumn("country2", cleanCountryUdf($"country", $"currency"))
-    .withColumn("currency2", cleanCurrencyUdf($"currency"))
-    .drop("country", "currency")
+//  val dfCountry: DataFrame = dfNoFutur
+//    .withColumn("country2", cleanCountryUdf($"country", $"currency"))
+//    .withColumn("currency2", cleanCurrencyUdf($"currency"))
+//    .drop("country", "currency")
 
   val dfNoCC = dfNoFutur
     .withColumn("country2", when($"country" === "False", $"currency").otherwise($"country"))
@@ -106,21 +109,26 @@ object Preprocessor extends App {
 
   // Adding some new columns
   val dfTS = filterFinalSatus.withColumn("deadlineTS", from_unixtime($"deadline")).withColumn("launched_atTS", from_unixtime($"launched_at")).withColumn("creadted_atTS", from_unixtime($"created_at"))
-  val datedTS = dfTS.withColumn("days_campaign", datediff($"deadlineTS", $"launched_atTS")).withColumn("hours_prepa", round(($"launched_at" - $"created_at") / 3600.floatValue(), 3)).drop("deadline", "deadlineTS", "launched_at", "launched_atTS", "created_at")
+  val datedTS = dfTS.withColumn("days_campaign", datediff($"deadlineTS", $"launched_atTS"))
+    .withColumn("hours_prepa", round(($"launched_at" - $"created_at") / 3600.floatValue(), 3)).drop("deadline", "deadlineTS", "launched_at", "launched_atTS", "created_at", "creadted_atTS")
 
   // Cleaning text
   val cleanText = datedTS.withColumn("name", lower($"name"))
-      .withColumn("desc", lower($"desc"))
-      .withColumn("keywords", lower($"keywords"))
-      .withColumn("text", concat_ws(" ", $"name", $"desc", $"keywords"))
-      .drop("name", "desc", "keywords")
+    .withColumn("desc", lower($"desc"))
+    .withColumn("keywords", lower($"keywords"))
+    .withColumn("text", concat_ws(" ", $"name", $"desc", $"keywords"))
+    .drop("name", "desc", "keywords")
 
   val finalDS = cleanText
-    .withColumn("country2", when(length($"country2") =!= 2, "unknown").otherwise($"country2"))
+    .withColumn("country2", when($"country2".isNull, "unknown").otherwise($"country2"))
+    .withColumn("currency2", when($"currency2".isNull, "unknown").otherwise($"currency2"))    
     .withColumn("days_campaign", when($"days_campaign".isNull, "-1").otherwise($"days_campaign"))
     .withColumn("hours_prepa", when($"hours_prepa".isNull, "-1").otherwise($"hours_prepa"))
     .withColumn("goal", when($"goal".isNull, "-1").otherwise($"goal"))
-    
-   finalDS.write.parquet("/home/martinez/spark-project/data/parquet/")
+
+  val toExport = finalDS.withColumn("days_campaign", $"days_campaign".cast("Int")).withColumn("hours_prepa", $"hours_prepa".cast("Double"))
+  toExport.printSchema()
+
+  toExport.write.parquet("/home/martinez/spark-project/data/parquet2/")
 
 }
