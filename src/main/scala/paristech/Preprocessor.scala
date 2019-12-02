@@ -19,7 +19,7 @@ object Preprocessor extends App {
     "spark.shuffle.file.buffer" -> "32k",
     "spark.default.parallelism" -> "12",
     "spark.sql.shuffle.partitions" -> "12",
-    "spark.master" -> "local"))
+    "spark.master" -> "local[*]"))
 
   Logger.getLogger("org").setLevel(Level.WARN)
   Logger.getLogger("akka").setLevel(Level.WARN)
@@ -50,7 +50,7 @@ object Preprocessor extends App {
     .read
     .option("header", true) // utilise la première ligne du (des) fichier(s) comme header
     .option("inferSchema", "true") // pour inférer le type de chaque colonne (Int, String, etc.)
-    .csv("/home/martinez/git/cours-spark-telecom/data/train_clean.csv")
+    .csv("./resources/train/train_clean.csv")
 
   println(s"Nombre de lignes : ${df.count}")
   println(s"Nombre de colonnes : ${df.columns.length}")
@@ -124,11 +124,11 @@ object Preprocessor extends App {
     .withColumn("currency2", when($"currency2".isNull, "unknown").otherwise($"currency2"))    
     .withColumn("days_campaign", when($"days_campaign".isNull, "-1").otherwise($"days_campaign"))
     .withColumn("hours_prepa", when($"hours_prepa".isNull, "-1").otherwise($"hours_prepa"))
-    .withColumn("goal", when($"goal".isNull, "-1").otherwise($"goal"))
+    .withColumn("goal", when($"goal".isNull, "-1").otherwise($"goal")).withColumn("goal", $"goal".cast("Double"))
 
   val toExport = finalDS.withColumn("days_campaign", $"days_campaign".cast("Int")).withColumn("hours_prepa", $"hours_prepa".cast("Double"))
   toExport.printSchema()
 
-  toExport.write.parquet("/home/martinez/spark-project/data/parquet2/")
+  toExport.write.parquet("./resources/prepro/")
 
 }
