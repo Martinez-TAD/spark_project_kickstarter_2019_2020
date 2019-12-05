@@ -35,8 +35,9 @@ object Trainer extends App {
     "spark.shuffle.file.buffer" -> "32k",
     "spark.default.parallelism" -> "12",
     "spark.sql.shuffle.partitions" -> "12",
-    "spark.driver.maxResultSize" -> "2g",
-    "spark.master" -> "local[*]"))
+    "spark.driver.maxResultSize" -> "2g"
+//    ,"spark.master" -> "local[2]"
+))
 
   val spark = SparkSession
     .builder
@@ -60,9 +61,9 @@ object Trainer extends App {
       *
       ********************************************************************************/
 
+  // Loading data from prepro
   val datasetNoFiltered = spark.read.parquet("./resources/prepro/")
-  
- // datasetNoFiltered.printSchema()
+
   
   // Goal have most of these value between 1 and 70000. Let's remove the last 5% and the 0 values
   val Array(q95) = datasetNoFiltered.stat.approxQuantile("goal", Array(0.95),0)  
@@ -72,7 +73,8 @@ object Trainer extends App {
   
     
   // Creation du pipeline
-
+  
+  // Tokenizer et stop word
   val tokenizer = new RegexTokenizer().setPattern("\\W+").setGaps(true).setInputCol("text").setOutputCol("tokens")
   val stopWordRemover = new StopWordsRemover().setInputCol(tokenizer.getOutputCol).setOutputCol("filtered")
 
@@ -81,23 +83,25 @@ object Trainer extends App {
   // Pas de nombre d'occurence minimale ni maximale
   val countVectorizer = new CountVectorizer().setInputCol(stopWordRemover.getOutputCol).setOutputCol("TF")
 
-  //    val dataSetHashing = new HashingTF().setInputCol("filtered").setOutputCol("features").transform(dataSetCountVect)
-  //
+  // IDF 
   val IDF = new IDF().setInputCol(countVectorizer.getOutputCol).setOutputCol("tfidf")
 
 
+  // StringIndexer: on skip les données que l'on ne connait pas (pb de l'Allemagne)
   val indexerCountry = new StringIndexer().setInputCol("country2").setOutputCol("country2_indexed").setHandleInvalid("skip")
   val indexerCurrency = new StringIndexer().setInputCol("currency2").setOutputCol("currency2_indexed")
 
   val oneHotEncorderCountry = new OneHotEncoderEstimator().setDropLast(false).setInputCols(Array(indexerCountry.getOutputCol, indexerCurrency.getOutputCol))
     .setOutputCols(Array("country_onehot", "currency_onehot"))
     
-  val vectorAssembler = new VectorAssembler().setInputCols(Array("tfidf", "goal", 
-      //"backers_count",
-      "days_campaign", "hours_prepa", "country_onehot", "currency_onehot")).setOutputCol("features")
+  val vectorAssembler = new VectorAssembler().setInputCols(Array(
+      "goal","days_campaign", "hours_prepa", IDF.getOutputCol ,
+      "tfidf", "goal"
+      //,"backers_count"
+      ) ++ oneHotEncorderCountry.getOutputCols ).setOutputCol("features")
 
   val lr = new LogisticRegression()
-    .setElasticNetParam(0.4)
+    .setElasticNetParam(0)
     .setFitIntercept(true)
     .setFeaturesCol("features")
     .setLabelCol("final_status")
@@ -106,14 +110,14 @@ object Trainer extends App {
     .setRawPredictionCol("raw_predictions")
     .setThresholds(Array(0.7, 0.3))
     .setTol(1.0e-6)
-    .setMaxIter(1000)
+    .setMaxIter(30)
 
   val rf = new RandomForestClassifier().setFeaturesCol("features").setLabelCol("final_status").setPredictionCol("predictions")
     
     
-  val pipeline: Pipeline = new Pipeline().setStages(Array(tokenizer, stopWordRemover, countVectorizer, IDF, indexerCountry, indexerCurrency, oneHotEncorderCountry, vectorAssembler, lr))
+  val pipeline: Pipeline = new Pipeline().setStages(Array(tokenizer, stopWordRemover, countVectorizer, IDF, indexerCountry, indexerCurrency, oneHotEncorderCountry, vectorAssembler, rf))
 
-  val Array(training, test) = datasetNoFiltered.randomSplit(Array(0.9, 0.1), 1234)
+  val Array(training, test) = dataset.randomSplit(Array(0.9, 0.1), 1234)
 
   val model = pipeline.fit(training)
   
@@ -139,11 +143,16 @@ object Trainer extends App {
 
   //dataSetIDF.select("features", "predictions", "final_status","raw_predictions").show()
   
-  
+  println("And with a grid")
 
-  val paramGrid = new ParamGridBuilder().addGrid(lr.regParam, Array(1e-8, 1e-6, 1e-4, 1e-2))
-                  .addGrid(countVectorizer.vocabSize, (50 to 200 by 50).toArray)
-                  .addGrid(lr.elasticNetParam, (0.0 to 1.0 by 0.25).toArray)
+  val paramGrid = new ParamGridBuilder()
+                  //.addGrid(lr.regParam, Array(1e-8, 1e-6, 1e-4, 1e-2))
+                  //.addGrid(lr.elasticNetParam, (0.2 to 1.0 by 0.2).toArray)
+                  .addGrid(rf.maxDepth,(5 to 15 by 3).toArray)
+                  .addGrid(rf.impurity, Array("entropy","gini"))
+                  .addGrid(rf.numTrees, (10 to 30 by 10).toArray)
+                  .addGrid(countVectorizer.minDF, (50.0 to 95.0 by 20).toArray)
+                                   
                   .build()
 
   val trainValidationSplit = new TrainValidationSplit().setEstimator(pipeline).setEvaluator(f1Evaluator).setEstimatorParamMaps(paramGrid).setTrainRatio(0.7)
@@ -158,6 +167,6 @@ object Trainer extends App {
   println(s"Recall = ${recallEvaluator.evaluate(testTransformed)}")
   println(s"Precision = ${precisionEvaluator.evaluate(testTransformed)}")
   
-  
-  trainSplit.write.save("./resources/trained/")
+  /*
+  trainSplit.write.save("./resources/trained/")*/
 }
