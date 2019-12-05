@@ -5,20 +5,33 @@ Le but du projet est de faire l'estimation de la réussite d'un projet kickstart
 ## Résultats en sortie de TP
 En suivant les instructions TP, nous obtenons les prédictions suivantes:
 
+
+
++------------+-----------+-----+
 |final_status|predictions|count|
-|------------|-----------|-----|
-|           1|        0.0| 1058|
-|           0|        1.0| 2770|
-|           1|        1.0| 2437|
-|           0|        0.0| 4456|
++------------+-----------+-----+
+|           1|        0.0| 1893|
+|           0|        1.0| 2352|
+|           1|        1.0| 1563|
+|           0|        0.0| 5013|
++------------+-----------+-----+
 
+F1 precision = 0.613612798303662
+Recall = 0.6077072359301359
+Precision = 0.6215632083352709
+And with a grid
++------------+-----------+-----+
+|final_status|predictions|count|
++------------+-----------+-----+
+|           1|        0.0| 1057|
+|           0|        1.0| 2873|
+|           1|        1.0| 2399|
+|           0|        0.0| 4492|
++------------+-----------+-----+
 
-
-|Mesure|Value       |
-|------------|-----------|
-|F1 precision|0.654|
-|Recall      |0.643|
-|Precision   |0.697|
+F1 precision = 0.6490644403666332
+Recall = 0.6368172996950374
+Precision = 0.6963050534403944
 
 Avec la grille, nous obtenons les résultats suivants:
 

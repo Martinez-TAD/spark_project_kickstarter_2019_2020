@@ -1,4 +1,4 @@
-name := "spark_project_kickstarter_2019_2020"
+name := "spark_project_kickstarter"
 
 version := "1.0"
 
@@ -12,7 +12,8 @@ libraryDependencies ++= Seq(
   // Spark dependencies. Marked as provided because they must not be included in the uber jar
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
-  "org.apache.spark" %% "spark-ml" % sparkVersion % "provided",
+  "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
+
   // Third-party libraries
   "org.apache.hadoop" % "hadoop-aws" % "2.7.3" % "provided",
   "com.amazonaws" % "aws-java-sdk" % "1.7.4" % "provided"
