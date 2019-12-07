@@ -21,6 +21,7 @@ object Preprocessor extends App {
     "spark.sql.shuffle.partitions" -> "12",
     "spark.master" -> "local[*]"))
 
+  // On supprime des log de Spark qui est très verbeux
   Logger.getLogger("org").setLevel(Level.WARN)
   Logger.getLogger("akka").setLevel(Level.WARN)
 
@@ -70,11 +71,8 @@ object Preprocessor extends App {
   val df2: DataFrame = dfCasted.drop("disable_communication")
 
   // Droping futur leaks
-  //val dfNoFutur: DataFrame = df2.drop("backers_count", "state_changed_at")
+  val dfNoFutur: DataFrame = df2.drop("backers_count", "state_changed_at")
 
-  
-  val dfNoFutur: DataFrame = df2.drop( "state_changed_at")
-  
   // Cleaning the country/currency columns
   def cleanCountry(country: String, currency: String): String = {
     if (country == "False")
@@ -93,17 +91,18 @@ object Preprocessor extends App {
   val cleanCountryUdf = udf(cleanCountry _)
   val cleanCurrencyUdf = udf(cleanCurrency _)
 
-//  val dfCountry: DataFrame = dfNoFutur
-//    .withColumn("country2", cleanCountryUdf($"country", $"currency"))
-//    .withColumn("currency2", cleanCurrencyUdf($"currency"))
-//    .drop("country", "currency")
-
-  val dfNoCC = dfNoFutur
-    .withColumn("country2", when($"country" === "False", $"currency").otherwise($"country"))
-    .withColumn("currency2", when($"country".isNotNull && length($"currency") =!= 3, null).otherwise($"currency"))
-    //.withColumn("country2", when(length($"country2") =!= 2, null).otherwise($"country2")) //adding to remove
+  val dfNoCC: DataFrame = dfNoFutur
+    .withColumn("country2", cleanCountryUdf($"country", $"currency"))
+    .withColumn("currency2", cleanCurrencyUdf($"currency"))
     .drop("country", "currency")
 
+  /**
+   *  Same code without udf functions
+   * val dfNoCC = dfNoFutur
+   * .withColumn("country2", when($"country" === "False", $"currency").otherwise($"country"))
+   * .withColumn("currency2", when($"country".isNotNull && length($"currency") =!= 3, null).otherwise($"currency"))
+   * .drop("country", "currency")
+   */
   // Remove non need lines
   val filterFinalSatus = dfNoCC.filter(length($"country2") === 2).filter($"final_status" === 0 || $"final_status" === 1)
 
@@ -121,7 +120,7 @@ object Preprocessor extends App {
 
   val finalDS = cleanText
     .withColumn("country2", when($"country2".isNull, "unknown").otherwise($"country2"))
-    .withColumn("currency2", when($"currency2".isNull, "unknown").otherwise($"currency2"))    
+    .withColumn("currency2", when($"currency2".isNull, "unknown").otherwise($"currency2"))
     .withColumn("days_campaign", when($"days_campaign".isNull, "-1").otherwise($"days_campaign"))
     .withColumn("hours_prepa", when($"hours_prepa".isNull, "-1").otherwise($"hours_prepa"))
     .withColumn("goal", when($"goal".isNull, "-1").otherwise($"goal")).withColumn("goal", $"goal".cast("Double"))
@@ -129,6 +128,7 @@ object Preprocessor extends App {
   val toExport = finalDS.withColumn("days_campaign", $"days_campaign".cast("Int")).withColumn("hours_prepa", $"hours_prepa".cast("Double"))
   toExport.printSchema()
 
+  // Save data to resoure path.
   toExport.write.parquet("./resources/prepro/")
 
 }
