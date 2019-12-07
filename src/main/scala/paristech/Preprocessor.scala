@@ -18,8 +18,7 @@ object Preprocessor extends App {
     "spark.kryoserializer.buffer.max" -> "1g",
     "spark.shuffle.file.buffer" -> "32k",
     "spark.default.parallelism" -> "12",
-    "spark.sql.shuffle.partitions" -> "12",
-    "spark.master" -> "local[*]"))
+    "spark.sql.shuffle.partitions" -> "12"))
 
   // On supprime des log de Spark qui est très verbeux
   Logger.getLogger("org").setLevel(Level.WARN)
