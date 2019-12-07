@@ -33,7 +33,7 @@ En suivant les instructions TP, nous obtenons les prédictions suivantes:
 |Recall         |0.6380|
 |Precision     |0.6967|
 
-Les meilleurs paramètres sont les suivants: minDF=0.5, regParam: 1.0E-8
+Les meilleurs paramètres sont les suivants: minDF=55, regParam: 1.0E-8
 
 
 ## Amélioration des résultats
@@ -88,4 +88,4 @@ Nous allons voir pour utiliser une randomForest afin d'etre en non linéaire.
 Les mesures sont claires: le prédicteur prédit toujours la même chose! 
 Je monte une grille pour voir si en modifiant des paramètres nous pouvons avoir une vraie prédiction.
 
-
+*** WIP: la grille tourne depuis 2 jours...*** 
