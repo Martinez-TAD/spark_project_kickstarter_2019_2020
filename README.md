@@ -33,7 +33,7 @@ En suivant les instructions TP, nous obtenons les prédictions suivantes:
 |Recall         |0.6380|
 |Precision     |0.6967|
 
-Les meilleurs paramètres sont les suivants: minDF=0.5, regParam: 1.0E-8
+Les meilleurs paramètres sont les suivants: minDF=55, regParam: 1.0E-8
 
 
 ## Amélioration des résultats
@@ -50,7 +50,9 @@ min      1.000000e-02
 75%      1.300000e+04
 max      1.000000e+08
 
-Nous allons donc faire un filtre sur les valeurs les plus hautes. Nous limiterons les valeurs au quantile 95% , soit la valeur 70000
+Nous allons donc faire un filtre sur les valeurs les plus hautes. Nous limiterons les valeurs au quantile 95% , soit la valeur 70000. Voici la nouvelle répartion apres cette suppression.
+
+![Goal sans outliners](https://raw.githubusercontent.com/Martinez-TAD/spark_project_kickstarter_2019_2020/master/goal.PNG)
 
 
 |Mesure        | Sans Grille| Avec une Grille|
@@ -88,4 +90,4 @@ Nous allons voir pour utiliser une randomForest afin d'etre en non linéaire.
 Les mesures sont claires: le prédicteur prédit toujours la même chose! 
 Je monte une grille pour voir si en modifiant des paramètres nous pouvons avoir une vraie prédiction.
 
-
+*** WIP: la grille tourne depuis 2 jours...*** 
