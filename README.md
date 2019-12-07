@@ -50,7 +50,9 @@ min      1.000000e-02
 75%      1.300000e+04
 max      1.000000e+08
 
-Nous allons donc faire un filtre sur les valeurs les plus hautes. Nous limiterons les valeurs au quantile 95% , soit la valeur 70000
+Nous allons donc faire un filtre sur les valeurs les plus hautes. Nous limiterons les valeurs au quantile 95% , soit la valeur 70000. Voici la nouvelle répartion apres cette suppression.
+
+![Goal sans outliners](https://raw.githubusercontent.com/Martinez-TAD/spark_project_kickstarter_2019_2020/master/goal.PNG)
 
 
 |Mesure        | Sans Grille| Avec une Grille|
