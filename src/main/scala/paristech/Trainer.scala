@@ -31,12 +31,13 @@ object Trainer extends App {
     "spark.speculation" -> "false",
     "spark.reducer.maxSizeInFlight" -> "48m",
     "spark.serializer" -> "org.apache.spark.serializer.KryoSerializer",
-    "spark.kryoserializer.buffer.max" -> "1g",
+    "spark.kryoserializer.buffer.max" -> "2000m",
     "spark.shuffle.file.buffer" -> "32k",
     "spark.default.parallelism" -> "12",
     "spark.sql.shuffle.partitions" -> "12",
-    "spark.driver.maxResultSize" -> "2g"
-//    ,"spark.master" -> "local[2]"
+    "spark.driver.maxResultSize" -> "8g"
+    ,"spark.executor.memory" -> "16g"
+    ,"spark.master" -> "local[*]"
 ))
 
   val spark = SparkSession
@@ -68,7 +69,7 @@ object Trainer extends App {
   // Goal have most of these value between 1 and 70000. Let's remove the last 5% and the 0 values
   val Array(q95) = datasetNoFiltered.stat.approxQuantile("goal", Array(0.95),0)  
   // Remove too high value and 0 value
-  val dataset = datasetNoFiltered.filter($"goal">0).filter($"goal"<q95 )
+  val dataset = datasetNoFiltered//.filter($"goal">0).filter($"goal"<q95 )
   
   
     
@@ -110,9 +111,9 @@ object Trainer extends App {
     .setRawPredictionCol("raw_predictions")
     .setThresholds(Array(0.7, 0.3))
     .setTol(1.0e-6)
-    .setMaxIter(30)
+    .setMaxIter(100)
 
-  val rf = new RandomForestClassifier().setFeaturesCol("features").setLabelCol("final_status").setPredictionCol("predictions")
+  val rf = new RandomForestClassifier().setFeaturesCol("features").setLabelCol("final_status").setPredictionCol("predictions").setImpurity("entropy")
     
     
   val pipeline: Pipeline = new Pipeline().setStages(Array(tokenizer, stopWordRemover, countVectorizer, IDF, indexerCountry, indexerCurrency, oneHotEncorderCountry, vectorAssembler, rf))
@@ -143,15 +144,15 @@ object Trainer extends App {
 
   //dataSetIDF.select("features", "predictions", "final_status","raw_predictions").show()
   
-  println("And with a grid")
+  println("\n And with a grid\n ")
 
   val paramGrid = new ParamGridBuilder()
-                  //.addGrid(lr.regParam, Array(1e-8, 1e-6, 1e-4, 1e-2))
+                  //.addGrid(lr.regParam, Array(1e-8, 1e-6, 1e-4, 1e-2))//, 0.1, 0.5, 1, 2))
                   //.addGrid(lr.elasticNetParam, (0.2 to 1.0 by 0.2).toArray)
-                  .addGrid(rf.maxDepth,(5 to 15 by 3).toArray)
+                  .addGrid(rf.maxDepth,(2 to 15 by 1).toArray)
                   .addGrid(rf.impurity, Array("entropy","gini"))
-                  .addGrid(rf.numTrees, (10 to 30 by 10).toArray)
-                  .addGrid(countVectorizer.minDF, (50.0 to 95.0 by 20).toArray)
+                  .addGrid(rf.numTrees, (50 to 1000 by 150).toArray)
+                  .addGrid(countVectorizer.minDF, (10.0 to 95.0 by 20).toArray)
                                    
                   .build()
 
@@ -166,7 +167,10 @@ object Trainer extends App {
   println(s"F1 precision = ${gridf1}")
   println(s"Recall = ${recallEvaluator.evaluate(testTransformed)}")
   println(s"Precision = ${precisionEvaluator.evaluate(testTransformed)}")
+
   
-  /*
-  trainSplit.write.save("./resources/trained/")*/
+  println(trainSplit.getEstimatorParamMaps(trainSplit.validationMetrics.indexOf(trainSplit.validationMetrics.max)))
+    
+  
+  //trainSplit.write.save("./resources/trained/")
 }
