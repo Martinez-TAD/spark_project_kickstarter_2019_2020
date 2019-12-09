@@ -90,4 +90,19 @@ Nous allons voir pour utiliser une randomForest afin d'etre en non linéaire.
 Les mesures sont claires: le prédicteur prédit toujours la même chose! 
 Je monte une grille pour voir si en modifiant des paramètres nous pouvons avoir une vraie prédiction.
 
-*** WIP: la grille tourne depuis 2 jours...*** 
+Après 5 jours à 8 CPUs, voici les résultats: 
+
+|final_status|predictions|count|
+|------------|-----------|-----|
+|           1|        0.0| 3415|
+|0|1|3
+|1|1|41
+|           0|        0.0| 7362|
+
+La foret n'est pas pertinante, nous n'avons pas foncièrement améliorer les performances. Seules quelques données donnent une prédiction de 1 (pour 44 valeurs sur les 10 000)
+La meilleure solution est atteinte pour les paramètres suivants:
+ - impurity: gini
+ - maxDepth = 15
+ - minDF = 90
+ - numTree = 950
+
